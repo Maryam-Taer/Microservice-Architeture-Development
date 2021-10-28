@@ -1,0 +1,60 @@
+openapi: 3.0.0 
+info: 
+  description: This API provides event stats 
+  version: "1.0.0" 
+  title: Stats API 
+  contact: 
+    email: mtaer@my.bcit.ca 
+    
+paths: 
+  /stats: 
+    get: 
+      summary: Gets the event stats 
+      operationId: app.get_stats 
+      description: Gets Find Restaurant and Write Review statistics 
+      responses: 
+        '200': 
+          description: Successfully returned a list of restaurant record and reviews events
+          content: 
+            application/json: 
+              schema: 
+                type: object 
+                items: 
+                  $ref: '#/components/schemas/ReadingStats' 
+        '400': 
+          description: Invalid request 
+          content: 
+            application/json: 
+              schema: 
+                type: object 
+                properties: 
+                  message: 
+                    type: string 
+                    
+components: 
+  schemas: 
+    ReadingStats: 
+      required: 
+      - num_takeouts_available
+      - top_reviews
+      - all_rest_records
+      - all_review_records
+      - last_updated
+      properties: 
+        num_takeouts_available:
+          type: integer 
+          example: 500000 
+        top_reviews:
+          type: integer 
+          example: 200
+        all_rest_records:
+          type: integer
+          example: 2000
+        all_review_records:
+          type: integer
+          example: 2000
+        last_updated:
+          type: string
+          format: date-time
+          example: '2016-08-20T09:12:33.001Z'
+      type: object

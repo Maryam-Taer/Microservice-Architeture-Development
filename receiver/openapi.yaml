@@ -1,0 +1,104 @@
+openapi: 3.0.0
+info:
+  description: This API receives restaurant requests based on location and reviews on experiences with the restaurant.
+  version: "1.0.0"
+  title: Online restaurant find & review API
+  contact:
+    email: mtaer@my.bcit.ca
+tags:
+  - name: Finding restaurant
+    description: Filters national/local retaurants based on user inputs.
+  - name: Write a revirw
+    description: Users can rate a restaurant ans write a review based on their experiences
+paths:
+  /finding-restaurant:
+    post:
+      tags:
+        - Finding restaurant
+      summary: Help user find national/local restaurants.
+      operationId: app.find_restaurant
+      description: Filter data on restarants based on user inputs.
+      responses:
+        '201':
+          description: Results on restaurants found.
+        '400':
+          description: 'No results found.'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FindingRestaurant'
+        description: Reading user input to filter restaurants
+        
+  /wrinting-review:
+    post:
+      tags:
+        - Writing review
+      summary: users can rate the restaurant found and write review(s).
+      operationId: app.write_review
+      description: Posts received users reviews and rates to the interface.
+      responses:
+        '201':
+          description: Review successfully added.
+        '400':
+          description: 'An error occured while adding your review. Review was not added.'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WriteReview'
+        description: Reading user input to filter restaurants
+        
+components:
+  schemas:
+    FindingRestaurant:
+      type: object
+      required:
+        - Restaurant_id
+        - Location
+        - Restaurant_type
+        - Delivery_option
+        - Open_on_weekends
+      properties:
+        Restaurant_id:
+          type: string
+          format: uuid
+          example: d290f1ee-6c54-4b01-90e6-d701748f0851
+        Location:
+          type: string
+          example: Vancouver, BC
+        Restaurant_type:
+          type: string
+          example: Korean
+        Delivery_option:
+          type: string
+          example: takeout
+        Open_on_weekends:
+          type: string
+          example: yes
+    WriteReview:
+      type: object
+      required:
+        - Post_id
+        - Username
+        - Rate_no
+        - Review_description
+        - Time_posted
+      properties:
+        Post_id:
+          type: string
+          format: uuid
+          example: d290f1ee-6c54-4b01-90e6-d701748f0851
+        Username:
+          type: string
+          example: John Doe
+        Rate_no:
+          type: integer
+          example: 5
+        Review_description:
+          type: string
+          example: I had a great experience with this restaurant.
+        Time_posted:
+          type: string
+          format: date-time
+          example: '2016-08-20T09:12:33.001Z'

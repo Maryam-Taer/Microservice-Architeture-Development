@@ -1,0 +1,9 @@
+version: 1
+FindRestaurant:
+  url: http://localhost:8090/finding-restaurant
+WriteReview:
+  url: http://localhost:8090/wrinting-review
+events:
+  hostname: acit3855-setc.eastus.cloudapp.azure.com
+  port: 9092
+  topic: events
