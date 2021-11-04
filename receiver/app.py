@@ -10,12 +10,6 @@ from pykafka import KafkaClient
 
 
 YAML_FILE = "openapi.yaml"
-EVENT_FILE = "events.json"
-MAX_EVENTS: int = 12
-OUTPUT = []
-
-
-STORAGE_URL = "http://localhost:8090"
 
 with open('app_conf.yml', 'r') as f:
     app_config = yaml.safe_load(f.read())
@@ -34,7 +28,9 @@ def find_restaurant(body) -> NoContent:
 
     logger.info(f'Received event "Find Restaurant" request with a unique id of {body["Restaurant_id"]}')
 
-    client = KafkaClient(hosts='acit3855-setc.eastus.cloudapp.azure.com:9092')
+    hostname = f'{app_config["events"]["hostname"]}:{app_config["events"]["port"]}'
+        
+    client = KafkaClient(hosts=hostname)
     topic = client.topics[str.encode(app_config["events"]["topic"])]
     producer = topic.get_sync_producer()
 
