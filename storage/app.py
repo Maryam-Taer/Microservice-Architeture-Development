@@ -60,32 +60,13 @@ def process_messages():
         if msg["type"] == "fr":  # Change this to your event type
             # Store the event1 (i.e., the payload) to the DB
             # find_restaurant(payload)
-            session = DB_SESSION()
-
-            fr = FindingRestaurant(payload['Restaurant_id'],
-                                   payload['Location'],
-                                   payload['Restaurant_type'],
-                                   payload['Delivery_option'],
-                                   payload['Open_on_weekends'])
-
-            session.add(fr)  # SQL insert statement
-            session.commit()
-            session.close()
+            find_restaurant()
             logger.debug(f'Stored event "Find Restaurant" with a unique id of {payload["Restaurant_id"]}')
 
         elif msg["type"] == "wr":  # Change this to your event type
             # Store the event2 (i.e., the payload) to the DB
             # write_review(payload)
-            session = DB_SESSION()
-
-            wr = WriteReview(payload['Post_id'],
-                             payload['Username'],
-                             payload['Rate_no'],
-                             payload['Review_description'])
-
-            session.add(wr)
-            session.commit()
-            session.close()
+            write_review()
             logger.debug(f'Stored event "Write Review" with a unique id of {payload["Post_id"]}')
 
         # Commit the new message as being read
@@ -120,41 +101,35 @@ def get_posted_reviews(timestamp):
     return results_list, 200
 
 
-# def find_restaurant(body):
-#     """ Receives a request to find a restaurant """
-#
-#     session = DB_SESSION()
-#
-#     bp = FindingRestaurant(body['Restaurant_id'],
-#                            body['Location'],
-#                            body['Restaurant_type'],
-#                            body['Delivery_option'],
-#                            body['Open_on_weekends'])
-#
-#     session.add(bp)  # SQL insert statement
-#     session.commit()
-#     session.close()
-#     logger.debug(f'Stored event "Find Restaurant" with a unique id of {body["Restaurant_id"]}')
-#
-#     return NoContent, 201
-#
-#
-# def write_review(body):
-#     """ Receives a review event """
-#
-#     session = DB_SESSION()
-#
-#     hr = WriteReview(body['Post_id'],
-#                      body['Username'],
-#                      body['Rate_no'],
-#                      body['Review_description'])
-#
-#     session.add(hr)
-#     session.commit()
-#     session.close()
-#     logger.debug(f'Stored event "Write Review" with a unique id of {body["Post_id"]}')
-#
-#     return NoContent, 201
+def find_restaurant():
+    """ Receives a request to find a restaurant """
+
+    session = DB_SESSION()
+
+    fr = FindingRestaurant(body['Restaurant_id'],
+                           body['Location'],
+                           body['Restaurant_type'],
+                           body['Delivery_option'],
+                           body['Open_on_weekends'])
+
+    session.add(fr)  # SQL insert statement
+    session.commit()
+    session.close()
+
+
+def write_review():
+    """ Receives a review event """
+
+    session = DB_SESSION()
+
+    wr = WriteReview(body['Post_id'],
+                     body['Username'],
+                     body['Rate_no'],
+                     body['Review_description'])
+
+    session.add(wr)
+    session.commit()
+    session.close()
 
 
 app = connexion.FlaskApp(__name__, specification_dir='')
