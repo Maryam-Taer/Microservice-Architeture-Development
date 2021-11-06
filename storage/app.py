@@ -60,13 +60,13 @@ def process_messages():
         if msg["type"] == "fr":  # Change this to your event type
             # Store the event1 (i.e., the payload) to the DB
             # find_restaurant(payload)
-            find_restaurant()
+            find_restaurant(payload)
             logger.debug(f'Stored event "Find Restaurant" with a unique id of {payload["Restaurant_id"]}')
 
         elif msg["type"] == "wr":  # Change this to your event type
             # Store the event2 (i.e., the payload) to the DB
             # write_review(payload)
-            write_review()
+            write_review(payload)
             logger.debug(f'Stored event "Write Review" with a unique id of {payload["Post_id"]}')
 
         # Commit the new message as being read
@@ -101,31 +101,31 @@ def get_posted_reviews(timestamp):
     return results_list, 200
 
 
-def find_restaurant():
+def find_restaurant(data):
     """ Receives a request to find a restaurant """
 
     session = DB_SESSION()
 
-    fr = FindingRestaurant(body['Restaurant_id'],
-                           body['Location'],
-                           body['Restaurant_type'],
-                           body['Delivery_option'],
-                           body['Open_on_weekends'])
+    fr = FindingRestaurant(data['Restaurant_id'],
+                           data['Location'],
+                           data['Restaurant_type'],
+                           data['Delivery_option'],
+                           data['Open_on_weekends'])
 
     session.add(fr)  # SQL insert statement
     session.commit()
     session.close()
 
 
-def write_review():
+def write_review(data):
     """ Receives a review event """
 
     session = DB_SESSION()
 
-    wr = WriteReview(body['Post_id'],
-                     body['Username'],
-                     body['Rate_no'],
-                     body['Review_description'])
+    wr = WriteReview(data['Post_id'],
+                     data['Username'],
+                     data['Rate_no'],
+                     data['Review_description'])
 
     session.add(wr)
     session.commit()
