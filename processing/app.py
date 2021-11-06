@@ -6,6 +6,7 @@ import requests
 import connexion
 from logging import config
 from connexion import NoContent
+from flask_cors import CORS, cross_origin
 from apscheduler.schedulers.background import BackgroundScheduler
 
 YAML_FILE = "openapi.yaml"
@@ -172,7 +173,7 @@ def init_scheduler():
 
 app = connexion.FlaskApp(__name__, specification_dir='')
 CORS(app.app)
-app.app.config['CORS_HEADERS'] = 'Content-Type'
+app.app.config['CORS_HEADERS'] = 'Content_Type'
 app.add_api(YAML_FILE, strict_validation=True, validate_responses=True)
 
 if __name__ == "__main__":
