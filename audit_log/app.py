@@ -20,8 +20,8 @@ logger = logging.getLogger('basicLogger')
 
 def get_searched_restaurants(index):
     """ Get BP Reading in History """
-    hostname = "%s:%d" % (app_config["events"]["hostname"],
-                          app_config["events"]["port"])
+    hostname = f'{app_config["events"]["hostname"]}:{app_config["events"]["port"]}'
+        
     client = KafkaClient(hosts=hostname)
     topic = client.topics[str.encode(app_config["events"]["topic"])]
 
