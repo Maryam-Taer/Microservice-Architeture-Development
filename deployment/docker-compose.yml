@@ -48,8 +48,6 @@ services:
   receiver:
     image: receiver:latest
     build: /home/maryam/acit3855/ACIT3855/receiver/
-      #context: /home/maryam/acit3855/ACIT3855/receiver
-      #dockerfile: /home/maryam/acit3855/ACIT3855/receiver/Dockerfile
     ports:
       - "8080:8080"
     depends_on:
@@ -58,8 +56,6 @@ services:
   storage:
     image: storage:latest
     build: /home/maryam/acit3855/ACIT3855/storage/
-      #context: /home/maryam/acit3855/ACIT3855/storage
-      #dockerfile: /home/maryam/acit3855/ACIT3855/storage/Dockerfile
     ports:
       - "8090:8090"
     depends_on:
@@ -70,8 +66,6 @@ services:
     network_mode: "host"
     image: processing:latest
     build: /home/maryam/acit3855/ACIT3855/processing/
-      #context: /home/maryam/acit3855/ACIT3855/processing
-      #dockerfile: /home/maryam/acit3855/ACIT3855/processing/Dockerfile
     depends_on:
       - "storage"
 
@@ -85,6 +79,15 @@ services:
       - "8110:8110"
     depends_on:
       - "kafka"
+      
+  dashboard:
+    image: dashboard:latest
+    build: /home/maryam/acit3855/ACIT3855/dashboard/
+    ports:
+      - "3000:3000"
+    depends_on:
+      - "processing"
+      - "audit_log"
 
 # Names our volume
 volumes:
