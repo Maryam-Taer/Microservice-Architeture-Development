@@ -79,7 +79,7 @@ def get_restaurant_records(s_url):
     return [json_data, total_events]
 
 def get_review_records(s_url):
-       event_data = read_from_json()
+    event_data = read_from_json()
     # http://localhost:8090/wrinting-review?start_timestamp="2021-10-14T13:14:50Z"$end_timestamp="2021-11-11T13:14:50Z"
     try:
         headers = {"Content-Type": "application/json"}
