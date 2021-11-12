@@ -50,18 +50,21 @@ def get_stats():
     return data, 200
 
 def get_restaurant_records(s_url):
+    event_data = read_from_json()
+    # http://localhost:8090/finding-restaurant?start_timestamp="2021-10-14T13:14:50Z"$end_timestamp="2021-11-11T13:14:50Z"
     try:
-        # http://localhost:8090/finding-restaurant?timestamp="2021-10-14T13:14:50Z"
         headers = {"Content-Type": "application/json"}
-        # current_datetime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+        current_datetime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
 
-        response = requests.get(f'{s_url}finding-restaurant?timestamp={read_from_json()["last_updated"]}', headers=headers)
+        response = requests.get(f'{s_url}finding-restaurant?start_timestamp={event_data["last_updated"]}'
+                                f'&end_timestamp={current_datetime}', headers=headers)
+        
         json_data = json.loads(response.text)
         total_events = len(json_data)
 
         logger.info(
-            f'Query for restaurant search records after {read_from_json()["last_updated"]} returns {total_events} '
-            f'results.')
+            f'Query for restaurant search records between {event_data["last_updated"]} and {current_datetime} '
+            f'returns {total_events} results.')
 
         if not response.status_code // 100 == 2:
             return logger.debug(
@@ -76,19 +79,21 @@ def get_restaurant_records(s_url):
     return [json_data, total_events]
 
 def get_review_records(s_url):
+       event_data = read_from_json()
+    # http://localhost:8090/wrinting-review?start_timestamp="2021-10-14T13:14:50Z"$end_timestamp="2021-11-11T13:14:50Z"
     try:
-        # HTTP GET method to get "restaurant search" records from the Storage DB.
-        # http://localhost:8090/wrinting-review?timestamp="2021-10-14T13:14:50Z"
         headers = {"Content-Type": "application/json"}
-        # current_datetime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+        current_datetime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
 
-        response = requests.get(f'{s_url}wrinting-review?timestamp={read_from_json()["last_updated"]}', headers=headers)
+        response = requests.get(f'{s_url}wrinting-review?start_timestamp={event_data["last_updated"]}'
+                                f'&end_timestamp={current_datetime}', headers=headers)
 
         json_data = json.loads(response.text)
         total_events = len(json_data)
 
         logger.info(
-            f'Query for review records after {read_from_json()["last_updated"]} returns {total_events} results.')
+            f'Query for review records between {event_data["last_updated"]} and {current_datetime} '
+            f'returns {total_events} results.')
 
         if not response.status_code // 100 == 2:
             return logger.debug(
