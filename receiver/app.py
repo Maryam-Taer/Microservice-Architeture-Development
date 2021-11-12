@@ -1,11 +1,12 @@
 import yaml
+import json
+import time
 import logging
 from logging import config
 import connexion
 from connexion import NoContent
 import requests
 import datetime
-import json
 from pykafka import KafkaClient
 
 
@@ -20,6 +21,25 @@ with open('log_conf.yml', 'r') as f:
 
 logger = logging.getLogger('basicLogger')
 
+# Trying to connect to Kafka
+hostname = f'{app_config["events"]["hostname"]}:{app_config["events"]["port"]}'
+    
+max_connection_retry = app_config["events"]["max_retries"]
+current_retry_count = 0
+
+while current_retry_count < max_connection_retry:
+    try:
+        logger.info(f'[Retry #{current_retry_count}] Connecting to Kafka...')
+        
+        client = KafkaClient(hosts=hostname)
+        topic = client.topics[str.encode(app_config["events"]["topic"])]
+        break
+        
+    except:
+        logger.error(f'Connection to Kafka failed in retry #{current_retry_count}!')
+        time.sleep(app_config["events"]["sleep"])
+        current_retry_count += 1
+
 
 def find_restaurant(body) -> NoContent:
     """ Receives a request to find a restaurant """
@@ -28,10 +48,10 @@ def find_restaurant(body) -> NoContent:
 
     logger.info(f'Received event "Find Restaurant" request with a unique id of {body["Restaurant_id"]}')
 
-    hostname = f'{app_config["events"]["hostname"]}:{app_config["events"]["port"]}'
-        
-    client = KafkaClient(hosts=hostname)
-    topic = client.topics[str.encode(app_config["events"]["topic"])]
+#     hostname = f'{app_config["events"]["hostname"]}:{app_config["events"]["port"]}'
+#     client = KafkaClient(hosts=hostname)
+#     topic = client.topics[str.encode(app_config["events"]["topic"])]
+
     producer = topic.get_sync_producer()
 
     msg = {"type": "fr",
@@ -52,11 +72,12 @@ def write_review(body) -> NoContent:
     # response = requests.post(app_config["WriteReview"]["url"], json=body, headers=headers)
 
     logger.info(f'Received event "Write Review" request with a unique id of {body["Post_id"]}')
-
-    client = KafkaClient(hosts='acit3855-setc.eastus.cloudapp.azure.com:9092')
-    topic = client.topics[str.encode(app_config["events"]["topic"])]
     producer = topic.get_sync_producer()
-    msg = {"type": "wr", "datetime": datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S"), "payload": body}
+    
+    msg = {"type": "wr", 
+           "datetime": datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S"), 
+           "payload": body}
+    
     msg_str = json.dumps(msg)
     producer.produce(msg_str.encode('utf-8'))
 
