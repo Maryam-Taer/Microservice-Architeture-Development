@@ -1,11 +1,12 @@
 import json
 import yaml
+import time
 import logging
 import datetime
 import connexion
 from logging import config
 from connexion import NoContent
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, and_
 from sqlalchemy.orm import sessionmaker
 from base import Base
 from write_review import WriteReview
@@ -36,9 +37,25 @@ DB_SESSION = sessionmaker(bind=DB_ENGINE)
 def process_messages():
     """ Process event messages """
     hostname = f'{app_config["events"]["hostname"]}:{app_config["events"]["port"]}'
+        
+    max_connection_retry = app_config["events"]["max_retries"]
+    current_retry_count = 0
+    
+    while current_retry_count < max_connection_retry:
+        try:
+            logger.info(f'[Storage][Retry #{current_retry_count}] Connecting to Kafka...')
+            
+            client = KafkaClient(hosts=hostname)
+            topic = client.topics[str.encode(app_config["events"]["topic"])]
+            break
+            
+        except:
+            logger.error(f'[Storage] Connection to Kafka failed in retry #{current_retry_count}!')
+            
+            time.sleep(app_config["events"]["sleep"])
+            current_retry_count += 1
+            # continue
 
-    client = KafkaClient(hosts=hostname)
-    topic = client.topics[str.encode(app_config["events"]["topic"])]
 
     # Create a consume on a consumer group, that only reads new messages
     # (uncommitted messages) when the service re-starts (i.e., it doesn't
@@ -73,11 +90,15 @@ def process_messages():
         consumer.commit_offsets()
 
 
-def get_searched_restaurants(timestamp):
+def get_searched_restaurants(start_timestamp, end_timestamp):
     """ Gets new restaurant records after the timestamp """
+    
     session = DB_SESSION()
-    timestamp_datetime = datetime.datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ")
-    readings = session.query(FindingRestaurant).filter(FindingRestaurant.date_created >= timestamp_datetime)
+    start_timestamp_datetime = datetime.datetime.strptime(start_timestamp, "%Y-%m-%dT%H:%M:%SZ")
+    end_timestamp_datetime = datetime.datetime.strptime(end_timestamp, "%Y-%m-%dT%H:%M:%SZ")
+    
+    readings = session.query(FindingRestaurant).filter(and_(FindingRestaurant.date_created >= start_timestamp_datetime,
+                                                            FindingRestaurant.date_created < end_timestamp_datetime))
     results_list = []
 
     for reading in readings:
@@ -87,11 +108,15 @@ def get_searched_restaurants(timestamp):
     return results_list, 200
 
 
-def get_posted_reviews(timestamp):
+def get_posted_reviews(start_timestamp, end_timestamp):
     """ Gets new reviews after the timestamp """
+    
     session = DB_SESSION()
-    timestamp_datetime = datetime.datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ")
-    readings = session.query(WriteReview).filter(WriteReview.date_created >= timestamp_datetime)
+    start_timestamp_datetime = datetime.datetime.strptime(start_timestamp, "%Y-%m-%dT%H:%M:%SZ")
+    end_timestamp_datetime = datetime.datetime.strptime(end_timestamp, "%Y-%m-%dT%H:%M:%SZ")
+    
+    readings = session.query(WriteReview).filter(and_(WriteReview.date_created >= start_timestamp_datetime,
+                                                      WriteReview.date_created < end_timestamp_datetime))
     results_list = []
 
     for reading in readings:
