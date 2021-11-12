@@ -28,7 +28,7 @@ logger.info(f'Connecting to DB. Hostname: {app_config["datastore"]["hostname"]},
 
 DB_ENGINE = create_engine(f'mysql+pymysql://{app_config["datastore"]["user"]}:'
                           f'{app_config["datastore"]["password"]}@{app_config["datastore"]["hostname"]}:'
-                          f'{app_config["datastore"]["port"]}/{app_config["datastore"]["db"]}')
+                          f'{app_config["datastore"]["port"]}/{app_config["datastore"]["db"]}', pool_pre_ping=True, pool_recycle=3600)
 
 Base.metadata.bind = DB_ENGINE
 DB_SESSION = sessionmaker(bind=DB_ENGINE)
