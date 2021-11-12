@@ -104,7 +104,8 @@ def get_searched_restaurants(start_timestamp, end_timestamp):
     for reading in readings:
         results_list.append(reading.to_dict())
         session.close()
-        logger.info(f"Query for restaurant search records after {timestamp} returns {len(results_list)} results")
+        logger.info(f"Query for restaurant search records between {start_timestamp} and {end_timestamp} returns {len(results_list)} results")
+
     return results_list, 200
 
 
@@ -122,7 +123,7 @@ def get_posted_reviews(start_timestamp, end_timestamp):
     for reading in readings:
         results_list.append(reading.to_dict())
         session.close()
-        logger.info(f"Query for review records after {timestamp} returns {len(results_list)} results")
+        logger.info(f"Query for review records between {start_timestamp} and {end_timestamp} returns {len(results_list)} results")
     return results_list, 200
 
 
