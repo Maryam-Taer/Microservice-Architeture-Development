@@ -7,3 +7,5 @@ events:
   hostname: acit3855-setc.eastus.cloudapp.azure.com
   port: 9092
   topic: events
+  max_retries: 10
+  sleep: 2
