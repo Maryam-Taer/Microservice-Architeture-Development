@@ -4,16 +4,17 @@ import time
 import logging
 import datetime
 import connexion
-from logging import config
-from connexion import NoContent
-from sqlalchemy import create_engine, and_
-from sqlalchemy.orm import sessionmaker
 from base import Base
-from write_review import WriteReview
-from find_restaurant import FindingRestaurant
+from logging import config
 from threading import Thread
 from pykafka import KafkaClient
+from write_review import WriteReview
+from find_restaurant import FindingRestaurant
 from pykafka.common import OffsetType
+from sqlalchemy import create_engine, and_
+from sqlalchemy.orm import sessionmaker, scoped_session
+
+YAML_FILE = "openapi.yaml"
 
 with open('app_conf.yml', 'r') as f:
     app_config = yaml.safe_load(f.read())
@@ -28,35 +29,43 @@ logger.info(f'Connecting to DB. Hostname: {app_config["datastore"]["hostname"]},
 
 DB_ENGINE = create_engine(f'mysql+pymysql://{app_config["datastore"]["user"]}:'
                           f'{app_config["datastore"]["password"]}@{app_config["datastore"]["hostname"]}:'
-                          f'{app_config["datastore"]["port"]}/{app_config["datastore"]["db"]}')
-                            # pool_pre_ping=True, pool_recycle=3600)
+                          f'{app_config["datastore"]["port"]}/{app_config["datastore"]["db"]}',
+                          pool_pre_ping=True, pool_recycle=300, pool_size=10, max_overflow=20, pool_timeout=3600)
+
+# pool_pre_ping: The “pre ping” feature will normally emit SQL equivalent to “SELECT 1” each time a connection is
+# checked out from the pool; if an error is raised that is detected as a “disconnect” situation, the connection will
+# be immediately recycled, and all other pooled connections older than the current time are invalidated, so that the
+# next time they are checked out, they will also be recycled before use. pool_size: the number of connections to keep
+# open inside the connection pool. pool_recycle: connection that has been open for more than 90 seconds (1 min & 30
+# sec) will be invalidated and replaced, upon next checkout. pool_timeout: number of seconds to wait (in Idle) before
+# giving up on getting a connection from the pool (default 30 sec).
 
 Base.metadata.bind = DB_ENGINE
-DB_SESSION = sessionmaker(bind=DB_ENGINE)
+# DB_SESSION = sessionmaker(bind=DB_ENGINE)
+DB_SESSION = scoped_session(sessionmaker(bind=DB_ENGINE))  # For thread-safety
 
 
 def process_messages():
     """ Process event messages """
     hostname = f'{app_config["events"]["hostname"]}:{app_config["events"]["port"]}'
-        
+
     max_connection_retry = app_config["events"]["max_retries"]
     current_retry_count = 0
-    
+
     while current_retry_count < max_connection_retry:
         try:
             logger.info(f'[Storage][Retry #{current_retry_count}] Connecting to Kafka...')
-            
+
             client = KafkaClient(hosts=hostname)
             topic = client.topics[str.encode(app_config["events"]["topic"])]
             break
-            
+
         except:
             logger.error(f'[Storage] Connection to Kafka failed in retry #{current_retry_count}!')
-            
+
             time.sleep(app_config["events"]["sleep"])
             current_retry_count += 1
             # continue
-
 
     # Create a consume on a consumer group, that only reads new messages
     # (uncommitted messages) when the service re-starts (i.e., it doesn't
@@ -93,38 +102,51 @@ def process_messages():
 
 def get_searched_restaurants(start_timestamp, end_timestamp):
     """ Gets new restaurant records after the timestamp """
-    
+
     session = DB_SESSION()
+
     start_timestamp_datetime = datetime.datetime.strptime(start_timestamp, "%Y-%m-%dT%H:%M:%SZ")
     end_timestamp_datetime = datetime.datetime.strptime(end_timestamp, "%Y-%m-%dT%H:%M:%SZ")
-    
-    readings = session.query(FindingRestaurant).filter(and_(FindingRestaurant.date_created >= start_timestamp_datetime,
-                                                            FindingRestaurant.date_created < end_timestamp_datetime))
-    results_list = []
 
-    for reading in readings:
-        results_list.append(reading.to_dict())
+    try:
+        readings = session.query(FindingRestaurant).filter(
+            and_(FindingRestaurant.date_created >= start_timestamp_datetime,
+                 FindingRestaurant.date_created < end_timestamp_datetime))
+        results_list = []
+
+        for reading in readings:
+            results_list.append(reading.to_dict())
+            session.close()
+            logger.info(
+                f"Query for restaurant search records between {start_timestamp} and {end_timestamp} returns {len(results_list)} results")
+
+    finally:  # will ensure that the close takes place even if there are database errors
         session.close()
-        logger.info(f"Query for restaurant search records between {start_timestamp} and {end_timestamp} returns {len(results_list)} results")
 
     return results_list, 200
 
 
 def get_posted_reviews(start_timestamp, end_timestamp):
     """ Gets new reviews after the timestamp """
-    
+
     session = DB_SESSION()
     start_timestamp_datetime = datetime.datetime.strptime(start_timestamp, "%Y-%m-%dT%H:%M:%SZ")
     end_timestamp_datetime = datetime.datetime.strptime(end_timestamp, "%Y-%m-%dT%H:%M:%SZ")
-    
-    readings = session.query(WriteReview).filter(and_(WriteReview.date_created >= start_timestamp_datetime,
-                                                      WriteReview.date_created < end_timestamp_datetime))
-    results_list = []
 
-    for reading in readings:
-        results_list.append(reading.to_dict())
+    try:
+        readings = session.query(WriteReview).filter(and_(WriteReview.date_created >= start_timestamp_datetime,
+                                                          WriteReview.date_created < end_timestamp_datetime))
+        results_list = []
+
+        for reading in readings:
+            results_list.append(reading.to_dict())
+            session.close()
+            logger.info(
+                f"Query for review records between {start_timestamp} and {end_timestamp} returns {len(results_list)} results")
+
+    finally:
         session.close()
-        logger.info(f"Query for review records between {start_timestamp} and {end_timestamp} returns {len(results_list)} results")
+
     return results_list, 200
 
 
@@ -160,7 +182,7 @@ def write_review(data):
 
 
 app = connexion.FlaskApp(__name__, specification_dir='')
-app.add_api("openapi.yaml", strict_validation=True, validate_responses=True)
+app.add_api(YAML_FILE, strict_validation=True, validate_responses=True)
 
 if __name__ == "__main__":
     t1 = Thread(target=process_messages)
