@@ -1,25 +1,39 @@
+import os
 import yaml
 import json
 import time
 import logging
-from logging import config
-import connexion
-from connexion import NoContent
 import requests
 import datetime
+import connexion
+from logging import config
+from connexion import NoContent
 from pykafka import KafkaClient
 
 
 YAML_FILE = "openapi.yaml"
 
-with open('app_conf.yml', 'r') as f:
+if "TARGET_ENV" in os.environ and os.environ["TARGET_ENV"] == "test":
+    print("In Test Environment")
+    app_conf_file = "/config/app_conf.yml"
+    log_conf_file = "/config/log_conf.yml"
+else:
+    print("In Dev Environment")
+    app_conf_file = "app_conf.yml"
+    log_conf_file = "log_conf.yml"
+
+with open(app_conf_file, 'r') as f:
     app_config = yaml.safe_load(f.read())
 
-with open('log_conf.yml', 'r') as f:
+# External Logging Configuration
+with open(log_conf_file, 'r') as f:
     log_config = yaml.safe_load(f.read())
     logging.config.dictConfig(log_config)
 
 logger = logging.getLogger('basicLogger')
+
+logger.info(f"App Conf File: {app_conf_file}")
+logger.info(f"Log Conf File: {log_conf_file}")
 
 # Trying to connect to Kafka
 hostname = f'{app_config["events"]["hostname"]}:{app_config["events"]["port"]}'
