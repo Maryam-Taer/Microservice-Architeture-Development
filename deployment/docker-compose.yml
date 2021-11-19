@@ -53,6 +53,11 @@ services:
   receiver:
     image: receiver:latest
     build: /home/maryam/acit3855/ACIT3855/receiver/
+    environment:
+      - TARGET_ENV=test
+    volumes:
+      - /home/maryam/config/receiver:/config
+      - /home/maryam/logs:/logs
     ports:
       - "8080:8080"
     depends_on:
@@ -61,6 +66,11 @@ services:
   storage:
     image: storage:latest
     build: /home/maryam/acit3855/ACIT3855/storage/
+    environment:
+      - TARGET_ENV=test
+    volumes:
+      - /home/maryam/config/storage:/config
+      - /home/maryam/logs:/logs
     ports:
       - "8090:8090"
     depends_on:
@@ -71,6 +81,12 @@ services:
     network_mode: "host"
     image: processing:latest
     build: /home/maryam/acit3855/ACIT3855/processing/
+    environment:
+      - TARGET_ENV=test
+    volumes:
+      - /home/maryam/config/processing:/config
+      - /home/maryam/logs:/logs
+      - processing-db:/data
     depends_on:
       - "storage"
 
@@ -78,13 +94,18 @@ services:
     image: audit_log:latest
     #container_name: audit_log
     build: /home/maryam/acit3855/ACIT3855/audit_log/
+    environment:
+      - TARGET_ENV=test
+    volumes:
+      - /home/maryam/config/audit_log:/config
+      - /home/maryam/logs:/logs
       #context: /home/maryam/acit3855/ACIT3855/audit_log
       #dockerfile: /home/maryam/acit3855/ACIT3855/audit_log/Dockerfile
     ports:
       - "8110:8110"
     depends_on:
       - "kafka"
-      
+
   dashboard:
     image: dashboard:latest
     build: /home/maryam/acit3855/ACIT3855/dashboard/
@@ -97,3 +118,4 @@ services:
 # Names our volume
 volumes:
   my-db:
+  processing-db:
