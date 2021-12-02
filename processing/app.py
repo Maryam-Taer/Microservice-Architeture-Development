@@ -70,8 +70,9 @@ def get_restaurant_records(s_url):
         headers = {"Content-Type": "application/json"}
         current_datetime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
 
-        response = requests.get(f'{s_url}finding-restaurant?start_timestamp={event_data["last_updated"]}'
+        response = requests.get(f'{s_url}/finding-restaurant?start_timestamp={event_data["last_updated"]}'
                                 f'&end_timestamp={current_datetime}', headers=headers)
+        # before (f'{s_url}finding-restaurant?start_timestamp={event_data["last_updated"]}&end_timestamp={current_datetime}')
         
         json_data = json.loads(response.text)
         total_events = len(json_data)
@@ -99,7 +100,7 @@ def get_review_records(s_url):
         headers = {"Content-Type": "application/json"}
         current_datetime = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
 
-        response = requests.get(f'{s_url}wrinting-review?start_timestamp={event_data["last_updated"]}'
+        response = requests.get(f'{s_url}/wrinting-review?start_timestamp={event_data["last_updated"]}'
                                 f'&end_timestamp={current_datetime}', headers=headers)
 
         json_data = json.loads(response.text)
@@ -191,9 +192,12 @@ def init_scheduler():
 
 
 app = connexion.FlaskApp(__name__, specification_dir='')
-CORS(app.app)
-app.app.config['CORS_HEADERS'] = 'Content_Type'
-app.add_api(YAML_FILE, strict_validation=True, validate_responses=True)
+
+if "TARGET_ENV" not in os.environ or os.environ["TARGET_ENV"] != "test":
+    CORS(app.app)
+    app.app.config['CORS_HEADERS'] = 'Content_Type'
+
+app.add_api(YAML_FILE, base_path="/processing", strict_validation=True, validate_responses=True)
 
 if __name__ == "__main__":
     # run our standalone gevent server
