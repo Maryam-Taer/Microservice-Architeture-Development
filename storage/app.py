@@ -196,7 +196,7 @@ def write_review(data):
 
 
 app = connexion.FlaskApp(__name__, specification_dir='')
-app.add_api(YAML_FILE, strict_validation=True, validate_responses=True)
+app.add_api(YAML_FILE, base_path="/storage", strict_validation=True, validate_responses=True)
 
 if __name__ == "__main__":
     t1 = Thread(target=process_messages)
