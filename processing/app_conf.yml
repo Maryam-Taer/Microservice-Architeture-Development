@@ -4,4 +4,5 @@ datastore:
 scheduler:
   period_sec: 5
 eventstore:
-  url: http://localhost:8090/
+  url: http://localhost:8090
+  # for lab 11 in kafka VM (config/processing/app_conf.yml), the url changes to (url: http://acit3855-setc.eastus.cloudapp.azure.com/storage)
