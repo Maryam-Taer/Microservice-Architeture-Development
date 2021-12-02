@@ -59,7 +59,9 @@ services:
       - /home/maryam/config/receiver:/config
       - /home/maryam/logs:/logs
     ports:
-      - "8080:8080"
+      - "8080"
+    networks:
+      - "api.network"
     depends_on:
       - "kafka"
 
@@ -72,13 +74,15 @@ services:
       - /home/maryam/config/storage:/config
       - /home/maryam/logs:/logs
     ports:
-      - "8090:8090"
+      - "8090"
+    networks:
+      - "api.network"
     depends_on:
       - "kafka"
       - "db"
 
   processing:
-    network_mode: "host"
+    # network_mode: "host"
     image: processing:latest
     build: /home/maryam/acit3855/ACIT3855/processing/
     environment:
@@ -87,6 +91,10 @@ services:
       - /home/maryam/config/processing:/config
       - /home/maryam/logs:/logs
       - processing-db:/data
+    ports:
+      - "8100"
+    networks:
+      - "api.network"
     depends_on:
       - "storage"
 
@@ -102,7 +110,9 @@ services:
       #context: /home/maryam/acit3855/ACIT3855/audit_log
       #dockerfile: /home/maryam/acit3855/ACIT3855/audit_log/Dockerfile
     ports:
-      - "8110:8110"
+      - "8110"
+    networks:
+      - "api.network"
     depends_on:
       - "kafka"
 
@@ -110,12 +120,39 @@ services:
     image: dashboard:latest
     build: /home/maryam/acit3855/ACIT3855/dashboard/
     ports:
-      - "3000:3000"
+      - "3000"
+    networks:
+      - "api.network"
     depends_on:
       - "processing"
       - "audit_log"
+
+  nginx:
+    image: nginx:latest
+
+    # Connects the conf file of the container to the conf file in our folder
+    volumes:
+      - /home/maryam/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+
+    # It will start up the nginx only when all api containers have started
+    depends_on:
+      - "receiver"
+      - "storage"
+      - "processing"
+      - "audit_log"
+      - "dashboard"
+
+    # Connects the port 80 of the nginx container to localhost:80 or localhost
+    ports:
+      - "80:80"
+
+    networks:
+      - "api.network"
 
 # Names our volume
 volumes:
   my-db:
   processing-db:
+
+networks:
+  api.network:
